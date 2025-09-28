@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Transaction Sanitizer</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .upload-section {
+            background: #f8fafc;
+            border: 2px dashed #cbd5e1;
+            border-radius: 12px;
+            padding: 40px;
+            text-align: center;
+            margin-bottom: 30px;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section.dragover {
+            border-color: #4f46e5;
+            background: #eef2ff;
+        }
+
+        .upload-icon {
+            font-size: 3rem;
+            color: #94a3b8;
+            margin-bottom: 20px;
+        }
+
+        .upload-text {
+            font-size: 1.1rem;
+            color: #64748b;
+            margin-bottom: 20px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+
+        .file-input {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: background 0.3s ease;
+        }
+
+        .file-input-button:hover {
+            background: #4338ca;
+        }
+
+        .file-info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #ecfdf5;
+            border: 1px solid #d1fae5;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .file-info.show {
+            display: block;
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #059669;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .process-button {
+            width: 100%;
+            padding: 15px;
+            background: #059669;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            margin-top: 20px;
+        }
+
+        .process-button:hover:not(:disabled) {
+            background: #047857;
+        }
+
+        .process-button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .progress-section {
+            margin-top: 30px;
+            display: none;
+        }
+
+        .progress-section.show {
+            display: block;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4f46e5, #7c3aed);
+            transition: width 0.3s ease;
+            width: 0%;
+        }
+
+        .progress-text {
+            text-align: center;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: #f0f9ff;
+            border: 1px solid #bae6fd;
+            border-radius: 8px;
+            display: none;
+        }
+
+        .result-section.show {
+            display: block;
+        }
+
+        .result-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .stat {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #0284c7;
+        }
+
+        .stat-label {
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+
+        .download-button {
+            width: 100%;
+            padding: 12px;
+            background: #0284c7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .download-button:hover {
+            background: #0369a1;
+        }
+
+        .error-message {
+            padding: 15px;
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            border-radius: 8px;
+            color: #dc2626;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .examples {
+            margin-top: 40px;
+            padding: 25px;
+            background: #fafafa;
+            border-radius: 12px;
+        }
+
+        .examples h3 {
+            margin-bottom: 15px;
+            color: #374151;
+        }
+
+        .example-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .example-item:last-child {
+            border-bottom: none;
+        }
+
+        .example-before {
+            font-family: 'Courier New', monospace;
+            color: #dc2626;
+            font-weight: 600;
+        }
+
+        .example-after {
+            font-family: 'Courier New', monospace;
+            color: #059669;
+            font-weight: 600;
+        }
+
+        .example-arrow {
+            color: #6b7280;
+            margin: 0 15px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .main-content {
+                padding: 20px;
+            }
+
+            .result-stats {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .example-item {
+                flex-direction: column;
+                text-align: center;
+                gap: 10px;
+            }
+
+            .example-arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-file-csv"></i> CSV Transaction Sanitizer</h1>
+            <p>Clean up your transaction names from ALL CAPS to proper sentence case</p>
+        </div>
+
+        <div class="main-content">
+            <div class="upload-section" id="uploadSection">
+                <div class="upload-icon">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                </div>
+                <div class="upload-text">
+                    Drag and drop your CSV file here, or click to select
+                </div>
+                <div class="file-input-wrapper">
+                    <input type="file" id="csvFile" class="file-input" accept=".csv">
+                    <button class="file-input-button" onclick="document.getElementById('csvFile').click()">
+                        Choose File
+                    </button>
+                </div>
+            </div>
+
+            <div class="file-info" id="fileInfo">
+                <div class="file-name" id="fileName"></div>
+                <div class="file-size" id="fileSize"></div>
+            </div>
+
+            <button class="process-button" id="processButton" disabled>
+                <i class="fas fa-magic"></i> Sanitize CSV
+            </button>
+
+            <div class="progress-section" id="progressSection">
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text" id="progressText">Processing...</div>
+            </div>
+
+            <div class="result-section" id="resultSection">
+                <div class="result-stats">
+                    <div class="stat">
+                        <div class="stat-number" id="totalRows">0</div>
+                        <div class="stat-label">Total Rows</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="sanitizedCount">0</div>
+                        <div class="stat-label">Sanitized</div>
+                    </div>
+                    <div class="stat">
+                        <div class="stat-number" id="unchangedCount">0</div>
+                        <div class="stat-label">Unchanged</div>
+                    </div>
+                </div>
+                <button class="download-button" id="downloadButton">
+                    <i class="fas fa-download"></i> Download Sanitized CSV
+                </button>
+            </div>
+
+            <div class="error-message" id="errorMessage"></div>
+
+            <div class="examples">
+                <h3><i class="fas fa-lightbulb"></i> Sanitization Examples</h3>
+                <div class="example-item">
+                    <span class="example-before">WALMART SUPERCENTER</span>
+                    <i class="fas fa-arrow-right example-arrow"></i>
+                    <span class="example-after">Walmart Supercenter</span>
+                </div>
+                <div class="example-item">
+                    <span class="example-before">AMAZON.COM PURCHASE</span>
+                    <i class="fas fa-arrow-right example-arrow"></i>
+                    <span class="example-after">Amazon.com Purchase</span>
+                </div>
+                <div class="example-item">
+                    <span class="example-before">SHELL GAS STATION #123</span>
+                    <i class="fas fa-arrow-right example-arrow"></i>
+                    <span class="example-after">Shell Gas Station #123</span>
+                </div>
+                <div class="example-item">
+                    <span class="example-before">MCDONALD'S #4567</span>
+                    <i class="fas fa-arrow-right example-arrow"></i>
+                    <span class="example-after">Mcdonald's #4567</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class CSVSanitizer {
+            constructor() {
+                this.csvData = null;
+                this.sanitizedData = null;
+                this.stats = { total: 0, sanitized: 0, unchanged: 0 };
+                this.initializeEventListeners();
+            }
+
+            initializeEventListeners() {
+                const fileInput = document.getElementById('csvFile');
+                const uploadSection = document.getElementById('uploadSection');
+                const processButton = document.getElementById('processButton');
+                const downloadButton = document.getElementById('downloadButton');
+
+                // File input change
+                fileInput.addEventListener('change', (e) => this.handleFileSelect(e));
+
+                // Drag and drop
+                uploadSection.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    uploadSection.classList.add('dragover');
+                });
+
+                uploadSection.addEventListener('dragleave', () => {
+                    uploadSection.classList.remove('dragover');
+                });
+
+                uploadSection.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    uploadSection.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (files.length > 0 && files[0].type === 'text/csv') {
+                        this.handleFile(files[0]);
+                    }
+                });
+
+                // Process button
+                processButton.addEventListener('click', () => this.processCsv());
+
+                // Download button
+                downloadButton.addEventListener('click', () => this.downloadSanitizedCsv());
+            }
+
+            handleFileSelect(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    this.handleFile(file);
+                }
+            }
+
+            handleFile(file) {
+                if (file.type !== 'text/csv') {
+                    this.showError('Please select a CSV file.');
+                    return;
+                }
+
+                this.hideError();
+                this.showFileInfo(file);
+                
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    this.csvData = e.target.result;
+                    document.getElementById('processButton').disabled = false;
+                };
+                reader.readAsText(file);
+            }
+
+            showFileInfo(file) {
+                const fileInfo = document.getElementById('fileInfo');
+                const fileName = document.getElementById('fileName');
+                const fileSize = document.getElementById('fileSize');
+
+                fileName.textContent = file.name;
+                fileSize.textContent = `Size: ${this.formatFileSize(file.size)}`;
+                fileInfo.classList.add('show');
+            }
+
+            formatFileSize(bytes) {
+                if (bytes === 0) return '0 Bytes';
+                const k = 1024;
+                const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+            }
+
+            async processCsv() {
+                if (!this.csvData) return;
+
+                this.showProgress();
+                this.hideError();
+                this.hideResults();
+
+                try {
+                    await this.delay(500); // Show progress briefly
+                    this.updateProgress(25, 'Parsing CSV...');
+
+                    const rows = this.parseCSV(this.csvData);
+                    if (rows.length === 0) {
+                        throw new Error('CSV file appears to be empty or invalid.');
+                    }
+
+                    await this.delay(300);
+                    this.updateProgress(50, 'Sanitizing transaction names...');
+
+                    const sanitizedRows = this.sanitizeRows(rows);
+
+                    await this.delay(300);
+                    this.updateProgress(75, 'Generating output...');
+
+                    this.sanitizedData = this.generateCSV(sanitizedRows);
+
+                    await this.delay(300);
+                    this.updateProgress(100, 'Complete!');
+
+                    await this.delay(500);
+                    this.hideProgress();
+                    this.showResults();
+
+                } catch (error) {
+                    this.hideProgress();
+                    this.showError(error.message);
+                }
+            }
+
+            parseCSV(csvText) {
+                const lines = csvText.split('\n').filter(line => line.trim());
+                const rows = [];
+
+                for (let line of lines) {
+                    // Simple CSV parsing - handles basic cases
+                    const row = this.parseCSVLine(line);
+                    if (row.length > 0) {
+                        rows.push(row);
+                    }
+                }
+
+                return rows;
+            }
+
+            parseCSVLine(line) {
+                const result = [];
+                let current = '';
+                let inQuotes = false;
+
+                for (let i = 0; i < line.length; i++) {
+                    const char = line[i];
+                    const nextChar = line[i + 1];
+
+                    if (char === '"') {
+                        if (inQuotes && nextChar === '"') {
+                            current += '"';
+                            i++; // Skip next quote
+                        } else {
+                            inQuotes = !inQuotes;
+                        }
+                    } else if (char === ',' && !inQuotes) {
+                        result.push(current.trim());
+                        current = '';
+                    } else {
+                        current += char;
+                    }
+                }
+
+                result.push(current.trim());
+                return result;
+            }
+
+            sanitizeRows(rows) {
+                this.stats = { total: rows.length, sanitized: 0, unchanged: 0 };
+                
+                return rows.map((row, index) => {
+                    if (row.length > 0 && row[0]) {
+                        const original = row[0];
+                        const sanitized = this.sanitizeTransactionName(original);
+                        
+                        if (sanitized !== original) {
+                            this.stats.sanitized++;
+                        } else {
+                            this.stats.unchanged++;
+                        }
+
+                        return [sanitized, ...row.slice(1)];
+                    }
+                    this.stats.unchanged++;
+                    return row;
+                });
+            }
+
+            sanitizeTransactionName(name) {
+                if (!name || typeof name !== 'string') return name;
+
+                // Convert to sentence case (first letter uppercase, rest lowercase)
+                // But preserve certain patterns like numbers, periods, apostrophes
+                return name.toLowerCase()
+                    .split(' ')
+                    .map(word => {
+                        if (word.length === 0) return word;
+                        
+                        // Handle special cases like "McDonald's" -> "Mcdonald's"
+                        // First letter always uppercase
+                        let result = word.charAt(0).toUpperCase() + word.slice(1);
+                        
+                        // Handle contractions and possessives
+                        result = result.replace(/('s|'t|'re|'ve|'ll|'d)$/g, (match) => match.toLowerCase());
+                        
+                        return result;
+                    })
+                    .join(' ');
+            }
+
+            generateCSV(rows) {
+                return rows.map(row => {
+                    return row.map(cell => {
+                        // Escape cells that contain commas, quotes, or newlines
+                        if (typeof cell === 'string' && (cell.includes(',') || cell.includes('"') || cell.includes('\n'))) {
+                            return '"' + cell.replace(/"/g, '""') + '"';
+                        }
+                        return cell;
+                    }).join(',');
+                }).join('\n');
+            }
+
+            showProgress() {
+                document.getElementById('progressSection').classList.add('show');
+            }
+
+            hideProgress() {
+                document.getElementById('progressSection').classList.remove('show');
+            }
+
+            updateProgress(percentage, text) {
+                document.getElementById('progressFill').style.width = percentage + '%';
+                document.getElementById('progressText').textContent = text;
+            }
+
+            showResults() {
+                const resultSection = document.getElementById('resultSection');
+                document.getElementById('totalRows').textContent = this.stats.total;
+                document.getElementById('sanitizedCount').textContent = this.stats.sanitized;
+                document.getElementById('unchangedCount').textContent = this.stats.unchanged;
+                resultSection.classList.add('show');
+            }
+
+            hideResults() {
+                document.getElementById('resultSection').classList.remove('show');
+            }
+
+            showError(message) {
+                const errorElement = document.getElementById('errorMessage');
+                errorElement.textContent = message;
+                errorElement.classList.add('show');
+            }
+
+            hideError() {
+                document.getElementById('errorMessage').classList.remove('show');
+            }
+
+            downloadSanitizedCsv() {
+                if (!this.sanitizedData) return;
+
+                const blob = new Blob([this.sanitizedData], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                
+                if (link.download !== undefined) {
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute('href', url);
+                    link.setAttribute('download', 'sanitized_transactions.csv');
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                    URL.revokeObjectURL(url);
+                }
+            }
+
+            delay(ms) {
+                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+        }
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            new CSVSanitizer();
+        });
+    </script>
+</body>
+</html>
